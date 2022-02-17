@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
-        "fmt"
+	"os"
 
 	guuid "github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
+
 
 func main() {
 	ctx := context.Background()
@@ -32,12 +34,25 @@ func main() {
 		id := guuid.New()
 		objectName := fmt.Sprintf("test" + id.String() + ".jpg")
 		filePath := "test1.jpg"
+
+		fileReader, errOpen := os.Open(filePath)
+		if errOpen != nil {
+			panic(1)
+		}
+
+		fileStat, errStat := fileReader.Stat()
+		if errStat != nil {
+			panic(1)
+		}
+
+		fileSize := fileStat.Size()
+
 		contentType := "image/jpeg"
-		info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
+		info, err := minioClient.PutObject(ctx, bucketName, objectName, fileReader, fileSize, minio.PutObjectOptions{ContentType: contentType})
 		if err != nil {
 			log.Fatalln(err)
-		        break
-                }
+			break
+		}
 
 		log.Printf("Successfully uploaded %s of size %d\n", objectName, info.Size)
 	}
